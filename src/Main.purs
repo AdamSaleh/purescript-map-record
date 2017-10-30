@@ -3,15 +3,12 @@ module Main where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
-import Data.Foldable (traverse_)
-import Data.List (List, (:))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Record (get, insert)
-import Data.Tuple (Tuple(..))
 import Global.Unsafe (unsafeStringify)
-import Type.Prelude (class IsSymbol, class ListToRow, class RowLacks, class RowToList, RLProxy(RLProxy), RProxy(..), SProxy(SProxy), reflectSymbol, kind Boolean)
+import Type.Prelude (class IsSymbol, class RowLacks, class RowToList, RLProxy(RLProxy), SProxy(SProxy))
 import Type.Row (Cons, Nil, kind RowList)
 
 foldRecord :: forall row xs a b row'
@@ -77,7 +74,7 @@ instance traverseRecordNil :: TraverseRecord Nil row a b () where
 class SequenceMaybeRecord rl row row'
   | rl -> row row'
   where
-    sequenceMaybeRecordImpl :: RLProxy rl -> Record row -> m (Record row')
+    sequenceMaybeRecordImpl :: RLProxy rl -> Record row -> Maybe (Record row')
 
 instance sequenceMaybeRecordCons ::
   ( IsSymbol name
@@ -86,7 +83,7 @@ instance sequenceMaybeRecordCons ::
   , RowLacks name tailRow'
   , RowCons name ty tailRow' row'
   ) => SequenceMaybeRecord (Cons name (Maybe ty) tail) row row' where
-  sequenceRecordImpl _ a  = 
+  sequenceMaybeRecordImpl _ a  = 
        insert namep <$> valA <*> rest
     where
       namep = SProxy :: SProxy name
@@ -100,9 +97,9 @@ instance sequenceMaybeRecordNil :: SequenceMaybeRecord Nil row () where
 
 sequenceMaybeRecord :: forall row row' rl
    . RowToList row rl
-  => SequenceMaybeRecord rl row row' m
+  => SequenceMaybeRecord rl row row'
   => Record row
-  -> m (Record row')
+  -> Maybe (Record row')
 sequenceMaybeRecord a = sequenceMaybeRecordImpl (RLProxy :: RLProxy rl) a
           
 
